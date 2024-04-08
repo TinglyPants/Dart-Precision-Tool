@@ -90,7 +90,7 @@ const GetScoreFromArgument = (argument) => {
     }
 };
 
-const boardSize = 500; // This value must be even. This is to ensure good argument calculations, as I am lazy.
+const boardSize = 240; // This value must be even. This is to ensure good argument calculations, as I am lazy.
 const boardCenterX = boardSize / 2 - 0.5; // Adjusted for 0 indexing.
 const boardCenterY = boardSize / 2 - 0.5; // Adjusted for 0 indexing.
 
@@ -104,6 +104,7 @@ const trebleUpperBound = (107 / 170) * (boardSize / 2);
 const doubleLowerBound = (162 / 170) * (boardSize / 2);
 const doubleUpperBound = (170 / 170) * (boardSize / 2);
 
+// Generating the board with correct points
 for (let x = 0; x < boardSize; x++) {
     for (let y = 0; y < boardSize; y++) {
         let t = CartesianToPolar(x, y, boardCenterX, boardCenterY);
@@ -115,19 +116,73 @@ for (let x = 0; x < boardSize; x++) {
 
         if (distance < innerBullUpperBound) {
             //Point on inner bullseye
-            PlacePixel(ctx, x, y, 50, 50, 50);
+            board[x][y] = 50;
         } else if (distance < outerBullUpperBound) {
             //Point on outer bullseye
-            PlacePixel(ctx, x, y, 25, 25, 25);
+            board[x][y] = 25;
         } else if (trebleLowerBound < distance && distance < trebleUpperBound) {
             //Point on treble band
-            PlacePixel(ctx, x, y, value * 3, value * 3, value * 3);
+            board[x][y] = value * 3;
         } else if (doubleLowerBound < distance && distance < doubleUpperBound) {
             //Point on double band
-            PlacePixel(ctx, x, y, value * 2, value * 2, value * 2);
+            board[x][y] = value * 2;
         } else if (distance < doubleUpperBound) {
             // Point is on the board at least.
-            PlacePixel(ctx, x, y, value, value, value);
+            board[x][y] = value;
+        } else {
+            // Point is not on the board
+            board[x][y] = 0;
         }
     }
 }
+
+let precision = 100;
+document.getElementById("precision").addEventListener("input", function () {
+    precision = document.getElementById("precision").value;
+    console.log("Input value changed to: " + precision);
+});
+
+const GetAverageAroundPoint = (x, y, precision) => {
+    // Finds the average value around a point.
+
+    let totalPointsScanned = 0;
+    let total = 0;
+
+    for (let localX = x - precision / 2; localX < x + precision / 2; localX++) {
+        for (
+            let localY = y - precision / 2;
+            localY < y + precision / 2;
+            localY++
+        ) {
+            // Make sure we are in bounds
+            if (localX < 0 || localX > boardSize) {
+                continue;
+            }
+            if (localY < 0 || localY > boardSize) {
+                continue;
+            }
+
+            // Now we know the points are valid, we start adding.
+            totalPointsScanned += 1;
+            total += board[localX][localY];
+        }
+    }
+    console.log("Completed point: " + x + "," + y);
+
+    return total / totalPointsScanned;
+};
+
+const Render = () => {
+    console.log("rendering");
+    if (precision < 0 || precision > 500) {
+        console.log("Invalid precision.");
+        return;
+    }
+    for (let x = 0; x < boardSize; x++) {
+        for (let y = 0; y < boardSize; y++) {
+            let t = GetAverageAroundPoint(x, y, precision);
+            PlacePixel(ctx, x, y, t, t, t);
+        }
+    }
+    console.log("Finished Rendering");
+};
