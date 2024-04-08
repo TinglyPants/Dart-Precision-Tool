@@ -9,11 +9,31 @@ const CreateEmptyBoardArray = (size) => {
 };
 
 const CartesianToPolar = (x, y, centerX, centerY) => {
+    // Modulus Calculations (in pixels)
     distanceX = Math.abs(centerX - x);
     distanceY = Math.abs(centerY - y);
     totalDistance = Math.sqrt(distanceX ** 2 + distanceY ** 2);
-    // Modulus is arbitrary. Argument is measured in degrees (because radians are boring.)
-    return { modulus: totalDistance, argument: null };
+
+    // Argument Calculations
+    let temp;
+    // Quadrant 1:
+    if (x > centerX && y < centerY) {
+        temp = (Math.atan(distanceY / distanceX) * 180) / Math.PI;
+    }
+    // Quadrant 2:
+    else if (x < centerX && y < centerY) {
+        temp = 180 - (Math.atan(distanceY / distanceX) * 180) / Math.PI;
+    }
+    // Quadrant 3
+    else if (x < centerX && y > centerY) {
+        temp = 180 + (Math.atan(distanceY / distanceX) * 180) / Math.PI;
+    }
+    // Quadrant 4
+    else if (x > centerX && y > centerY) {
+        temp = 360 - (Math.atan(distanceY / distanceX) * 180) / Math.PI;
+    }
+    // Modulus is in pixels. Argument is measured in degrees (because radians are boring) Furthermore, Argument is measured from 0 < t < 360, as opposed to -180 < t < 180. This makes later calculations easier.
+    return { modulus: totalDistance, argument: temp };
 };
 
 const PlacePixel = (context, x, y, red, green, blue) => {
@@ -23,7 +43,7 @@ const PlacePixel = (context, x, y, red, green, blue) => {
     context.fillRect(x, y, 1, 1);
 };
 
-const boardSize = 500;
+const boardSize = 500; // This value must be even. This is to ensure good argument calculations, as I am lazy.
 const boardCenterX = boardSize / 2 - 0.5; // Adjusted for 0 indexing.
 const boardCenterY = boardSize / 2 - 0.5; // Adjusted for 0 indexing.
 
@@ -39,12 +59,10 @@ const doubleUpperBound = (170 / 170) * (boardSize / 2);
 
 for (let x = 0; x < boardSize; x++) {
     for (let y = 0; y < boardSize; y++) {
-        let distance = CartesianToPolar(
-            x,
-            y,
-            boardCenterX,
-            boardCenterY
-        ).modulus;
+        let t = CartesianToPolar(x, y, boardCenterX, boardCenterY);
+
+        let distance = t.modulus;
+        let angle = t.argument;
 
         if (distance < innerBullUpperBound) {
             //Point on inner bullseye
@@ -60,7 +78,7 @@ for (let x = 0; x < boardSize; x++) {
             PlacePixel(ctx, x, y, 0, 128, 128);
         } else if (distance < doubleUpperBound) {
             // Point is on the board at least.
-            PlacePixel(ctx, x, y, 50, 50, 50);
+            PlacePixel(ctx, x, y, angle * 0.70833333333, 0, 0);
         }
     }
 }
